@@ -1,0 +1,172 @@
+<html lang="en">
+    <head>
+        <title>7-Minute Workout</title>
+    </head>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 20px;
+        }
+
+        h1 {
+            color: #333;
+        }
+
+        img {
+            border-radius: 10px;
+            margin-bottom: 20px;
+            height: 200px;
+            opacity: 0;
+        }
+
+        h2 {
+            color: #555;
+        }
+
+        .container {
+            max-width: 600px;
+            min-width: 60%;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        #workout-list {
+            text-align: left;
+            margin: 10px auto 10px 35%;
+            width: 50%;
+        }
+
+        #rep, #finish {
+            display: none;
+        }
+
+        button {
+            background-color: #04AA6D; /* Green */
+            border: none;
+            color: white;
+            padding: 15px 32px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+        }
+    </style>
+
+    <body>
+    <div class="container" id="start">
+        <h1>7-Minute Workout</h1>
+        <p>Click the button below to start your workout.</p>
+        <ul id="workout-list"></ul>
+        <button onclick="runWorkout()">Start Workout</button>
+    </div>
+    <div class="container" id="rep">
+        <h1 id="workout"></h1>
+        <img src="#" alt="" id="workout-image">
+        <h2 id="timer"></h2>
+    </div>
+    <div class="container" id="finish">
+        <h1>Workout Complete!</h1>
+        <p>Great job! You've completed your workout.</p>
+        <button onclick="location.reload()">Restart</button>
+    </div>
+    </body>
+
+    <script>
+        let workoutCount = 12
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        let workouts = [
+            { name: "Jumping Jacks", image: "#" },
+            { name: "Wall Sit", image: "#" },
+            { name: "Push Ups", image: "#" },
+            { name: "Crunches", image: "#" },
+            { name: "Step Up onto Chair", image: "#" },
+            { name: "Squat", image: "#" },
+            { name: "Triceps Dip on Chair", image: "#" },
+            { name: "Plank", image: "#" },
+            { name: "High Knee Running in Place", image: "#" },
+            { name: "Lunge", image: "#" },
+            { name: "Side Plank", image: "#" },
+            { name: "Mountain Climbers", image: "#" },
+            { name: "Bicycle Crunches", image: "#" },
+            { name: "Standing Bicycle Crunches", image: "#" },
+            { name: "Standing Side Crunches", image: "#" },
+            { name: "Pelvic Thrust", image: "#" },
+            { name: "Side Lunges", image: "#" },
+            { name: "One Leg Balance", image: "#" },
+            { name: "Russian Twists", image: "#" },
+            { name: "Backwards Lunge", image: "#" },
+            { name: "Snow Angel", image: "#" },
+            { name: "Leg Rows", image: "#" },
+            { name: "Superman Push-up", image: "#" },
+            { name: "Glute Bridge", image: "#" },
+            { name: "Inchworm", image: "#" },
+            { name: "Bird Dog", image: "#" },
+            { name: "Slow Skater", image: "#" },
+        ];
+
+        workouts = shuffleArray(workouts).slice(0, workoutCount);
+        let list = document.getElementById("workout-list");
+        for (let i = workouts.length-1; i >= 0; i--) {
+            let li = document.createElement("li");
+            li.textContent = workouts[i].name;
+            list.appendChild(li);
+        }
+
+        let finishTime = null;
+        let interval = null;
+        let audioPlayed = false;
+
+        function runWorkout() {
+            document.getElementById("start").style.display = "none";
+            document.getElementById("rep").style.display = "block";
+            document.getElementById("rep").style.backgroundColor = "#fffadc";
+            if (workouts.length > 0) {
+                let workout = workouts.pop();
+                audioPlayed = false;
+                document.getElementById("workout").textContent = workout.name + " (" + (workoutCount - workouts.length) + "/" + workoutCount + ")";
+                document.getElementById("workout-image").setAttribute("src", "images/" + workout.image);
+                document.getElementById("workout-image").setAttribute("alt", workout.name);
+                document.getElementById("timer").textContent = "5";
+                let now = new Date();
+                finishTime = now.getTime() + 35 * 1000;
+                interval = setInterval(updateDisplay, 5);
+            } else {
+                document.getElementById("rep").style.display = "none";
+                document.getElementById("finish").style.display = "block";
+            }
+        }
+
+        function updateDisplay() {
+            let now = new Date();
+            let difference = finishTime - now.getTime();
+
+            if (difference > 30 * 1000) {
+                difference -= 30 * 1000;
+            } else if (difference < 0) {
+                clearInterval(interval);
+                return runWorkout();
+            } else if (difference < 4 * 1000 && !audioPlayed) {
+                audioPlayed = true;
+                let audio = new Audio("audio.mp4");
+                audio.play();
+            } else {
+                document.getElementById("rep").style.backgroundColor = "#fff";
+            }
+            document.getElementById("timer").textContent = `${Math.round(difference / 1000, 1)}`;
+        }
+    </script>
+</html>
