@@ -3,8 +3,6 @@
         <title>7-Minute Workout</title>
     </head>
 
-<!--    TODO-->
-<!--    Input fields for how many activities, how long per activity, how long between-->
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -39,10 +37,39 @@
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
         }
 
+        .config-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 12px;
+            margin: 20px auto;
+            max-width: 280px;
+            text-align: left;
+        }
+
+        .config-field {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .config-field label {
+            font-size: 14px;
+            color: #333;
+            font-weight: bold;
+        }
+
+        .config-field input {
+            padding: 8px 10px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            font-size: 16px;
+        }
+
         #workout-list {
             text-align: left;
             margin: 10px auto 10px 35%;
             width: 50%;
+            display: none;
         }
 
         #rep, #finish {
@@ -58,13 +85,30 @@
             text-decoration: none;
             display: inline-block;
             font-size: 16px;
+            cursor: pointer;
         }
     </style>
 
     <body>
     <div class="container" id="start">
         <h1>7-Minute Workout</h1>
-        <p>Click the button below to start your workout.</p>
+        <p>Customize your workout below, then start when you're ready.</p>
+
+        <div class="config-grid">
+            <div class="config-field">
+                <label for="activity-count">How many activities?</label>
+                <input id="activity-count" type="number" min="1" max="30" value="12">
+            </div>
+            <div class="config-field">
+                <label for="activity-duration">How long per activity (seconds)?</label>
+                <input id="activity-duration" type="number" min="5" max="180" value="30">
+            </div>
+            <div class="config-field">
+                <label for="rest-duration">How long between activities (seconds)?</label>
+                <input id="rest-duration" type="number" min="0" max="180" value="5">
+            </div>
+        </div>
+
         <ul id="workout-list"></ul>
         <button onclick="runWorkout()">Start Workout</button>
     </div>
@@ -81,16 +125,7 @@
     </body>
 
     <script>
-        let workoutCount = 12
-        function shuffleArray(array) {
-            for (let i = array.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [array[i], array[j]] = [array[j], array[i]];
-            }
-            return array;
-        }
-
-        let workouts = [
+        const workoutCatalog = [
             { name: "Jumping Jacks", image: "#" },
             { name: "Wall Sit", image: "#" },
             { name: "Push Ups", image: "#" },
@@ -122,32 +157,88 @@
             { name: "Scissor", image: "#" },
         ];
 
-        workouts = shuffleArray(workouts).slice(0, workoutCount);
-        let list = document.getElementById("workout-list");
-        for (let i = workouts.length-1; i >= 0; i--) {
-            let li = document.createElement("li");
-            li.textContent = workouts[i].name;
-            list.appendChild(li);
-        }
-
+        let workoutCount = 12;
+        let activityDuration = 30;
+        let restDuration = 5;
+        let workouts = [];
         let finishTime = null;
         let interval = null;
         let audioPlayed = false;
+        let currentPhase = "exercise";
+
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        function getConfiguredValues() {
+            const countInput = document.getElementById("activity-count");
+            const durationInput = document.getElementById("activity-duration");
+            const restInput = document.getElementById("rest-duration");
+
+            workoutCount = Math.max(1, parseInt(countInput.value, 10) || 12);
+            activityDuration = Math.max(5, parseInt(durationInput.value, 10) || 30);
+            restDuration = Math.max(0, parseInt(restInput.value, 10) || 5);
+
+            countInput.value = workoutCount;
+            durationInput.value = activityDuration;
+            restInput.value = restDuration;
+        }
+
+        function renderWorkoutList() {
+            getConfiguredValues();
+            workouts = shuffleArray([...workoutCatalog]).slice(0, workoutCount);
+
+            const list = document.getElementById("workout-list");
+            list.innerHTML = "";
+            for (let i = workouts.length - 1; i >= 0; i--) {
+                const li = document.createElement("li");
+                li.textContent = workouts[i].name;
+                list.appendChild(li);
+            }
+        }
+
+        document.getElementById("activity-count").addEventListener("input", renderWorkoutList);
+        document.getElementById("activity-duration").addEventListener("input", renderWorkoutList);
+        document.getElementById("rest-duration").addEventListener("input", renderWorkoutList);
+
+        renderWorkoutList();
+
+        function beginExercisePhase() {
+            currentPhase = "exercise";
+            const workout = workouts.pop();
+            audioPlayed = false;
+            console.log(workouts, workout, workoutCount, workouts.length);
+            document.getElementById("workout").textContent = workout.name + " (" + (workoutCount - workouts.length) + "/" + workoutCount + ")";
+            document.getElementById("workout-image").setAttribute("src", "images/" + workout.image);
+            document.getElementById("workout-image").setAttribute("alt", workout.name);
+            document.getElementById("timer").textContent = activityDuration;
+            finishTime = new Date().getTime() + activityDuration * 1000;
+        }
+
+        function beginRestPhase() {
+            currentPhase = "rest";
+            document.getElementById("workout").textContent = "Rest";
+            document.getElementById("workout-image").setAttribute("src", "#");
+            document.getElementById("workout-image").setAttribute("alt", "Rest");
+            document.getElementById("timer").textContent = restDuration;
+            finishTime = new Date().getTime() + restDuration * 1000;
+        }
 
         function runWorkout() {
+            getConfiguredValues();
+            // renderWorkoutList();
             document.getElementById("start").style.display = "none";
             document.getElementById("rep").style.display = "block";
             document.getElementById("rep").style.backgroundColor = "#fffadc";
+
             if (workouts.length > 0) {
-                let workout = workouts.pop();
-                audioPlayed = false;
-                document.getElementById("workout").textContent = workout.name + " (" + (workoutCount - workouts.length) + "/" + workoutCount + ")";
-                document.getElementById("workout-image").setAttribute("src", "images/" + workout.image);
-                document.getElementById("workout-image").setAttribute("alt", workout.name);
-                document.getElementById("timer").textContent = "5";
-                let now = new Date();
-                finishTime = now.getTime() + 35 * 1000;
-                interval = setInterval(updateDisplay, 5);
+                beginExercisePhase();
+                clearInterval(interval);
+                interval = setInterval(updateDisplay, 50);
             } else {
                 document.getElementById("rep").style.display = "none";
                 document.getElementById("finish").style.display = "block";
@@ -155,22 +246,34 @@
         }
 
         function updateDisplay() {
-            let now = new Date();
-            let difference = finishTime - now.getTime();
+            const now = new Date();
+            const difference = finishTime - now.getTime();
 
-            if (difference > 30 * 1000) {
-                difference -= 30 * 1000;
-            } else if (difference < 0) {
+            if (difference <= 0) {
                 clearInterval(interval);
+
+                if (currentPhase === "exercise") {
+                    if (restDuration > 0) {
+                        beginRestPhase();
+                        interval = setInterval(updateDisplay, 50);
+                        return;
+                    }
+
+                    return runWorkout();
+                }
+
                 return runWorkout();
-            } else if (difference < 4 * 1000 && !audioPlayed) {
-                audioPlayed = true;
-                let audio = new Audio("audio.mp4");
-                audio.play();
-            } else {
-                document.getElementById("rep").style.backgroundColor = "#fff";
             }
-            document.getElementById("timer").textContent = `${Math.round(difference / 1000, 1)}`;
+
+            if (currentPhase === "exercise" && difference < 4 * 1000 && !audioPlayed) {
+                audioPlayed = true;
+                const audio = new Audio("audio.mp4");
+                audio.play();
+            }
+
+            document.getElementById("rep").style.backgroundColor = "#fff";
+            document.getElementById("timer").textContent = `${Math.ceil(difference / 1000)}`;
         }
     </script>
 </html>
+
